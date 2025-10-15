@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: golang-backend-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - golang-backend
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: golang-backend-auth
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - MONGO_URI=mongodb://admin:password@mongodb:27017
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - SERVICE_NAME=auth-service
+      - SERVICE_PORT=8081
+    depends_on:
+      - mongodb
+    networks:
+      - golang-backend
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: golang-backend-user
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - MONGO_URI=mongodb://admin:password@mongodb:27017
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - SERVICE_NAME=user-service
+      - SERVICE_PORT=8082
+    depends_on:
+      - mongodb
+    networks:
+      - golang-backend
+
+  admin-service:
+    build:
+      context: ./admin-service
+      dockerfile: Dockerfile
+    container_name: golang-backend-admin
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - MONGO_URI=mongodb://admin:password@mongodb:27017
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - SERVICE_NAME=admin-service
+      - SERVICE_PORT=8083
+    depends_on:
+      - mongodb
+    networks:
+      - golang-backend
+
+volumes:
+  mongo_data:
+
+networks:
+  golang-backend:
+    driver: bridge
